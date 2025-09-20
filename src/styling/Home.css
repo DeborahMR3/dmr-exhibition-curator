@@ -1,0 +1,10 @@
+.home{ text-align:center; }
+.home h2{
+  font-size: 22px;
+  margin: 18px 0 10px;
+}
+.home p{
+  color: var(--muted);
+  max-width: 720px;
+  margin: 0 auto;
+}

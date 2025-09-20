@@ -1,0 +1,12 @@
+/* centralização reutilizável */
+.container{
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* espaço do conteúdo e folga pro footer fixo */
+main{
+  padding: 28px 0;
+  padding-bottom: 88px; /* evita sobrepor o footer */
+}

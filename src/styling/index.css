@@ -1,0 +1,28 @@
+/* Reset leve e layout base */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root { height: 100%; }
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* O <main> cresce para empurrar o footer */
+main { flex: 1; }
+
+/* Base de tipografia/cores */
+:root{
+  --text:#1f2937;         /* cinza-escuro limpo */
+  --muted:#6b7280;        /* cinza suave */
+  --brand:#3a2c6a;        /* seu roxinho */
+}
+
+body{
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  font-size: 16px;
+  color: var(--text);
+  background: #ffffff;
+  line-height: 1.55;
+}
