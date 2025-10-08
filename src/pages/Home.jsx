@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { searchObjects, getObject } from "../api/metApi.js";
+import { searchMetObjects, getObject } from "../api/metApi.js";
+import { searchAICObjects } from "../api/aicApi.js";
 import "../styling/Home.css"; // importa o css da página
 
 export default function Home() {
+  // estados do componente
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -12,27 +14,37 @@ export default function Home() {
     setError("");
     setItems([]);
 
-    searchObjects("portrait")
-      .then(function (data) {
-        const ids = (data.objectIDs || []).slice(0, 12);  //objectIDs vem do API
+    // faz as duas buscas ao mesmo tempo (the met + aic)
+    Promise.all([
+      searchMetObjects("portrait"),    // busca ids do the met
+      searchAICObjects("portrait"), // busca artworks do aic
+    ])
+      .then(function ([metData, aicObjects]) {
+        // pega até 8 ids do met pra não sobrecarregar
+        const metIDs = (metData.objectIDs || []).slice(0, 8);
 
-        if (ids.length === 0) {
-          setError("No results found.");
-          throw new Error("No IDs returned");
-        }
-
-        const promises = ids.map(function (id) {
+        // cria uma lista de promessas pra buscar detalhes de cada obra do met
+        const metPromises = metIDs.map(function (id) {
           return getObject(id);
         });
 
-        return Promise.all(promises);
-      })
-      .then(function (objects) {
-        const completeObject = objects.filter(function (obj) {
-          return obj && obj.primaryImageSmall;
-        });
+        // espera o met terminar e depois junta com os resultados do aic
+        return Promise.all(metPromises).then(function (metObjects) {
+          // filtra só as obras do met que têm imagem
+          const filteredMetObjects = metObjects.filter(function (metObject) {
+            return metObject && metObject.primaryImageSmall;
+          });
 
-        setItems(completeObject);
+          // junta as obras dos dois museus num único array
+          const combined = [...filteredMetObjects, ...aicObjects];
+
+          if (combined.length === 0) {
+            setError("No results found.");
+          }
+
+          // atualiza o estado com todos os resultados
+          setItems(combined);
+        });
       })
       .catch(function (error) {
         console.error(error);
@@ -41,25 +53,26 @@ export default function Home() {
       .finally(function () {
         setLoading(false);
       });
-  }, []); // [] = roda só quando a página carregar
+  }, []); // roda só uma vez quando a página carrega
 
   return (
     <section className="home-page">
-      <h2>The Met — artworks</h2>
+      <h2>Artworks from The Met and the Art Institute of Chicago</h2>
 
-      {loading && <p className="loading">Loading...</p>}
+      {loading && <p className="loading">loading...</p>}
       {error && <p className="error">{error}</p>}
 
       <div className="artworks-grid">
         {items.map(function (obj) {
           return (
-            <article key={obj.objectID} className="art-card">
+            <article key={obj.objectID || obj.id} className="art-card">
               <img
                 src={obj.primaryImageSmall}
                 alt={obj.title}
               />
-              <h3>{obj.title || "Untitled"}</h3>
-              <p>{obj.artistDisplayName || "Unknown artist"}</p>
+              <h3>{obj.title || "untitled"}</h3>
+              <p>{obj.artistDisplayName || "unknown artist"}</p>
+              <p className="museum">{obj.museum}</p>
             </article>
           );
         })}
@@ -67,19 +80,3 @@ export default function Home() {
     </section>
   );
 }
-
-
-
-// import "../styling/Home.css";
-
-// export default function Home() {
-//   return (
-//     <section className="home container">
-//       <h2>Welcome to Exhibition Curator</h2>
-//       <p>
-//         Start curating your own exhibition by exploring artworks and adding them
-//         to your personal collection.
-//       </p>
-//     </section>
-//   );
-// }
