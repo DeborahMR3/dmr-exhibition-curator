@@ -1,29 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { searchObjects, getObject } from "../api/metApi.js";
+import "../styling/Home.css"; // importa o css da página
 
 export default function Home() {
-  const [obj, setObj] = useState(null);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function handleLoadOne() {
+  useEffect(function () {
     setLoading(true);
     setError("");
-    setObj(null);
+    setItems([]);
 
     searchObjects("portrait")
       .then(function (data) {
-        const firstId = (data.objectIDs && data.objectIDs[0]) ? data.objectIDs[0] : null;
+        const ids = (data.objectIDs || []).slice(0, 12);  //objectIDs vem do API
 
-        if (!firstId) {
+        if (ids.length === 0) {
           setError("No results found.");
           throw new Error("No IDs returned");
         }
 
-        return getObject(firstId);
+        const promises = ids.map(function (id) {
+          return getObject(id);
+        });
+
+        return Promise.all(promises);
       })
-      .then(function (details) {
-        setObj(details);
+      .then(function (objects) {
+        const completeObject = objects.filter(function (obj) {
+          return obj && obj.primaryImageSmall;
+        });
+
+        setItems(completeObject);
       })
       .catch(function (error) {
         console.error(error);
@@ -32,23 +41,29 @@ export default function Home() {
       .finally(function () {
         setLoading(false);
       });
-  }
+  }, []); // [] = roda só quando a página carregar
 
   return (
-    <section style={{ padding: 20 }}>
-      <h2>The Met — step by step</h2>
-      <button onClick={handleLoadOne} disabled={loading}>
-        {loading ? "Loading..." : "Load ONE artwork"}
-      </button>
+    <section className="home-page">
+      <h2>The Met — artworks</h2>
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {loading && <p className="loading">Loading...</p>}
+      {error && <p className="error">{error}</p>}
 
-      {obj && (
-        <div>
-          <p><b>Title:</b> {obj.title || "Untitled"}</p>
-          <p><b>Artist:</b> {obj.artistDisplayName || "Unknown"}</p>
-        </div>
-      )}
+      <div className="artworks-grid">
+        {items.map(function (obj) {
+          return (
+            <article key={obj.objectID} className="art-card">
+              <img
+                src={obj.primaryImageSmall}
+                alt={obj.title}
+              />
+              <h3>{obj.title || "Untitled"}</h3>
+              <p>{obj.artistDisplayName || "Unknown artist"}</p>
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }
