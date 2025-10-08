@@ -1,27 +1,28 @@
-const BASE = "https://collectionapi.metmuseum.org/public/collection/v1";
+// base aponta pro proxy do vite pra não dar cors (antes era a url completa do met)
+const BASE = "/met";
 
-// busca IDs de objetos por termo
-export function searchObjects(term) {
+// busca ids de objetos por termo
+export function searchMetObjects(term) {
   return fetch(`${BASE}/search?q=${encodeURIComponent(term)}&hasImages=true`)
-    .then((res) => {
+    .then(function (res) {
       if (!res.ok) {
         return Promise.reject({
           status: res.status,
-          msg: "Failed to fetch object IDs",
+          msg: "failed to fetch object ids",
         });
       }
       return res.json();
     });
 }
 
-// busca detalhes de um objeto específico
+// busca detalhes de um objeto específico pelo id
 export function getObject(id) {
   return fetch(`${BASE}/objects/${id}`)
-    .then((res) => {
+    .then(function (res) {
       if (!res.ok) {
         return Promise.reject({
           status: res.status,
-          msg: "Failed to fetch object details",
+          msg: "failed to fetch object details",
         });
       }
       return res.json();

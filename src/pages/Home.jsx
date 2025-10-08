@@ -1,7 +1,17 @@
 import { useState, useEffect } from "react";
 import { searchMetObjects, getObject } from "../api/metApi.js";
 import { searchAICObjects } from "../api/aicApi.js";
+import { searchHarvardObjects } from "../api/harvardApi.js";
 import "../styling/Home.css"; // importa o css da página
+
+// limites simples para manter estável
+const PAGE_SIZE = 50; // total exibido
+const MET_COUNT = 1;  // quantos detalhes do met eu busco por vez
+
+// pequeno helper para dar respiro entre chamadas (fica aqui caso eu aumente o met_count no futuro)
+function wait(ms) {
+  return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
 
 export default function Home() {
   // estados do componente
@@ -9,51 +19,61 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // termo inicial de busca
+  const [searchTerm, setSearchTerm] = useState("portrait");
+
   useEffect(function () {
     setLoading(true);
     setError("");
     setItems([]);
 
-    // faz as duas buscas ao mesmo tempo (the met + aic)
+    // faço as três buscas em paralelo: met (ids), aic (dados completos), harvard (dados completos)
     Promise.all([
-      searchMetObjects("portrait"),    // busca ids do the met
-      searchAICObjects("portrait"), // busca artworks do aic
+      searchMetObjects(searchTerm),
+      searchAICObjects(searchTerm),
+      searchHarvardObjects(searchTerm),
     ])
-      .then(function ([metData, aicObjects]) {
-        // pega até 8 ids do met pra não sobrecarregar
-        const metIDs = (metData.objectIDs || []).slice(0, 8);
+      .then(async function ([metData, aicObjects, harvardObjects]) {
+        // preparo os ids do met (posso aumentar no futuro, por enquanto deixo 1)
+        const metIDs = (metData && metData.objectIDs ? metData.objectIDs : []).slice(0, MET_COUNT);
 
-        // cria uma lista de promessas pra buscar detalhes de cada obra do met
-        const metPromises = metIDs.map(function (id) {
-          return getObject(id);
-        });
-
-        // espera o met terminar e depois junta com os resultados do aic
-        return Promise.all(metPromises).then(function (metObjects) {
-          // filtra só as obras do met que têm imagem
-          const filteredMetObjects = metObjects.filter(function (metObject) {
-            return metObject && metObject.primaryImageSmall;
-          });
-
-          // junta as obras dos dois museus num único array
-          const combined = [...filteredMetObjects, ...aicObjects];
-
-          if (combined.length === 0) {
-            setError("No results found.");
+        // tento buscar os detalhes do met, mas sem deixar o app quebrar
+        const metResults = [];
+        for (let i = 0; i < metIDs.length; i++) {
+          try {
+            // se aumentar quantidade, isso espaça as chamadas: 0ms, 300ms, 600ms...
+            await wait(i * 300);
+            const detail = await getObject(metIDs[i]);
+            if (detail && detail.primaryImageSmall) {
+              metResults.push({ ...detail, museum: "The Met" });
+            }
+          } catch (e) {
+            // se o met der 502/403 aqui, eu simplesmente sigo em frente e uso aic + harvard
+            // console.warn("met detail failed", metIDs[i], e);
           }
+        }
 
-          // atualiza o estado com todos os resultados
-          setItems(combined);
-        });
+        // combino tudo e corto pelo tamanho da página
+        const combined = [...metResults, ...aicObjects, ...harvardObjects].slice(0, PAGE_SIZE);
+
+        // se tiver pelo menos 1 item de qualquer museu, não mostro erro
+        if (combined.length === 0) {
+          setError("No results found.");
+        } else {
+          setError("");
+        }
+
+        setItems(combined);
       })
-      .catch(function (error) {
-        console.error(error);
+      .catch(function (err) {
+        // só cai aqui se as 3 buscas iniciais falharem ao mesmo tempo (bem raro)
+        console.error(err);
         setError("Request failed.");
       })
       .finally(function () {
         setLoading(false);
       });
-  }, []); // roda só uma vez quando a página carrega
+  }, [searchTerm]); // roda toda vez que o termo muda
 
   return (
     <section className="home-page">
@@ -62,17 +82,32 @@ export default function Home() {
       {loading && <p className="loading">loading...</p>}
       {error && <p className="error">{error}</p>}
 
+      <form
+        className="search-form"
+        onSubmit={function (event) {
+          event.preventDefault(); // impede recarregar a página
+          // o input controlado já dispara o useeffect quando muda o valor
+        }}
+      >
+        <input
+          type="text"
+          placeholder="search artworks..."
+          value={searchTerm}
+          onChange={function (event) {
+            setSearchTerm(event.target.value);
+          }}
+        />
+        <button type="submit">search</button>
+      </form>
+
       <div className="artworks-grid">
-        {items.map(function (obj) {
+        {items.map(function (object) {
           return (
-            <article key={obj.objectID || obj.id} className="art-card">
-              <img
-                src={obj.primaryImageSmall}
-                alt={obj.title}
-              />
-              <h3>{obj.title || "untitled"}</h3>
-              <p>{obj.artistDisplayName || "unknown artist"}</p>
-              <p className="museum">{obj.museum}</p>
+            <article key={object.objectID || object.id} className="art-card">
+              <img src={object.primaryImageSmall} alt={object.title} />
+              <h3>{object.title || "untitled"}</h3>
+              <p>{object.artistDisplayName || "unknown artist"}</p>
+              <p className="museum">{object.museum}</p>
             </article>
           );
         })}
