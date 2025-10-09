@@ -113,7 +113,7 @@ export default function Home() {
 
   return (
     <section className="home-page">
-      <h2>Artworks from The Met, AIC and Harvard</h2>
+      <h2>Artworks from AIC and Harvard</h2>
       <p className="counter" aria-live="polite">my exhibition: {count} item(s)</p>
 
       {loading && <p className="loading">loading...</p>}
@@ -151,7 +151,7 @@ export default function Home() {
 
       <div className="artworks-grid">
         {filteredItems
-          // CHANGED: removemos obras do The Met apenas na renderização (não mexe nas buscas).
+          // CHANGED: removemos obras do The Met apenas na renderização (não mexe nas buscas). !!!!!!!!!!!!!
           // Efeito: nada do Met aparece nos cards, mas o resto do fluxo do app permanece igual.
           .filter(x => !/met/i.test(x.museum || ""))
           .map((object) => {
