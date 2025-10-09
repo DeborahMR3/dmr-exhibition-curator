@@ -27,7 +27,7 @@ export default function App() {
           <Route path="/exhibition" element={<Exhibition />} />
 
           {/* nova rota de detalhes da obra */}
-          <Route path="/artwork/:id" element={<ArtworkDetail />} />
+          <Route path="/artwork/:museum/:id" element={<ArtworkDetail />} />
 
           {/* rota curinga (sempre no final!) */}
           <Route path="*" element={<h2 style={{ padding: 16 }}>Page Not Found</h2>} />
@@ -38,6 +38,7 @@ export default function App() {
     </ExhibitionProvider>
   );
 }
+
 
 // export default function App() {
 //   return (
