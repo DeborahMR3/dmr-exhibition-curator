@@ -1,8 +1,9 @@
 // src/api/aicApi.js
+// API Art Institute of Chicago (AIC) — usa URL completa (sem proxy)
 
 const AIC_BASE = "https://api.artic.edu/api/v1";
 
-// busca obras por termo
+// Busca obras por termo
 export async function searchAICObjects(term) {
   const url = `${AIC_BASE}/artworks/search?q=${encodeURIComponent(
     term
@@ -19,14 +20,12 @@ export async function searchAICObjects(term) {
       id: art.id,
       title: art.title || "Untitled",
       artistDisplayName: art.artist_display || "Unknown artist",
-      primaryImageSmall: art.image_id
-        ? `https://www.artic.edu/iiif/2/${art.image_id}/full/843,/0/default.jpg`
-        : null,
+      primaryImageSmall: `https://www.artic.edu/iiif/2/${art.image_id}/full/843,/0/default.jpg`,
       museum: "Art Institute of Chicago",
     }));
 }
 
-// busca detalhes de uma obra específica
+// Busca detalhes de uma obra
 export async function getAICObject(id) {
   const url = `${AIC_BASE}/artworks/${id}`;
   const response = await fetch(url);
