@@ -1,42 +1,50 @@
 // src/api/aicApi.js
-// busca na API do Art Institute of Chicago (AIC)
-const AIC_BASE = "/aic";
 
+const AIC_BASE = "https://api.artic.edu/api/v1";
+
+// busca obras por termo
 export async function searchAICObjects(term) {
-  const url = `${AIC_BASE}/search?q=${encodeURIComponent(term)}&limit=20`;
+  const url = `${AIC_BASE}/artworks/search?q=${encodeURIComponent(
+    term
+  )}&limit=20&fields=id,title,artist_display,image_id`;
   const response = await fetch(url);
   if (!response.ok) throw new Error("AIC search failed");
-  const data = await response.json();
 
-  // filtra apenas obras com imagem
-  const artworks = (data.data || [])
-    .filter((artwork) => artwork.image_id) // só com imagem
-    .map((artwork) => ({
-      id: artwork.id,
-      title: artwork.title || "Untitled",
-      artistDisplayName: artwork.artist_title || "Unknown artist",
-      primaryImageSmall: `https://www.artic.edu/iiif/2/${artwork.image_id}/full/843,/0/default.jpg`,
+  const data = await response.json();
+  const artworks = data.data || [];
+
+  return artworks
+    .filter((art) => art.image_id)
+    .map((art) => ({
+      id: art.id,
+      title: art.title || "Untitled",
+      artistDisplayName: art.artist_display || "Unknown artist",
+      primaryImageSmall: art.image_id
+        ? `https://www.artic.edu/iiif/2/${art.image_id}/full/843,/0/default.jpg`
+        : null,
       museum: "Art Institute of Chicago",
     }));
-
-  return artworks;
 }
 
+// busca detalhes de uma obra específica
 export async function getAICObject(id) {
-  const url = `${AIC_BASE}/objects/${id}`;
+  const url = `${AIC_BASE}/artworks/${id}`;
   const response = await fetch(url);
-  if (!response.ok) throw new Error("AIC detail fetch failed");
+  if (!response.ok) throw new Error("AIC object fetch failed");
+
   const data = await response.json();
-  const artwork = data.data;
+  const art = data.data;
 
   return {
-    id: artwork.id,
-    title: artwork.title || "Untitled",
-    artistDisplayName: artwork.artist_title || "Unknown artist",
-    primaryImage: `https://www.artic.edu/iiif/2/${artwork.image_id}/full/843,/0/default.jpg`,
-    medium: artwork.medium_display || "",
-    date: artwork.date_display || "",
-    department: artwork.department_title || "",
+    id: art.id,
+    title: art.title || "Untitled",
+    artistDisplayName: art.artist_display || "Unknown artist",
+    primaryImage: art.image_id
+      ? `https://www.artic.edu/iiif/2/${art.image_id}/full/843,/0/default.jpg`
+      : null,
+    medium: art.medium_display || "",
+    date: art.date_display || "",
+    department: art.department_title || "",
     museum: "Art Institute of Chicago",
   };
 }
