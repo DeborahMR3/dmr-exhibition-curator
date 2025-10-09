@@ -1,0 +1,75 @@
+.artwork-detail {
+  max-width: 1100px;          /* ligeiramente maior pra acomodar imagem maior */
+  margin: 40px auto;
+  padding: 20px;
+  text-align: center;
+}
+
+/* bloco que contém imagem + informações */
+.artwork-detail__content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 32px;                  /* respiro entre imagem e texto */
+  align-items: flex-start;
+  margin-top: 24px;
+}
+
+/* imagem principal da obra — agora maior */
+.artwork-detail__image {
+  max-width: 700px;           /* antes 400px → agora imagem grande */
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  cursor: zoom-in;            /* coerente com comportamento de ampliar */
+}
+
+/* bloco de informações ao lado (ou abaixo no mobile) */
+.artwork-detail__info {
+  max-width: 400px;
+  text-align: left;
+}
+
+/* link para o site do museu */
+.artwork-detail__link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #0056b3;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.artwork-detail__link:hover {
+  text-decoration: underline;
+}
+
+/* modal de visualização grande (abre ao clicar na imagem) */
+.artwork-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.artwork-modal__content {
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.artwork-modal__image {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  cursor: zoom-out;
+}
+
+.artwork-modal__caption {
+  margin-top: 12px;
+  color: #f5f5f5;
+  font-size: 15px;
+}
