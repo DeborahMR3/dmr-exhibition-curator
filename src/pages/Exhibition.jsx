@@ -1,18 +1,13 @@
-// src/pages/Exhibition.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import "../styling/Exhibition.css";
-
-// contexto: itens salvos da exposição
 import { useExhibition } from "../context/ExhibitionContext.jsx";
 
 export default function Exhibition() {
-  // pega itens salvos e helpers do contexto
   const { items, count, removeItem } = useExhibition();
 
-  // controla o modal de imagem grande
   const [selectedItem, setSelectedItem] = useState(null);
+  const modalImgRef = useRef(null);
 
-  // fecha modal com ESC
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === "Escape") setSelectedItem(null);
@@ -21,66 +16,42 @@ export default function Exhibition() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  /**
-   * Escolhe a melhor URL de imagem disponível no item,
-   * respeitando as diferenças entre Met / AIC / Harvard.
-   * NUNCA usa placeholder.
-   */
-  function getImageSrc(obj) {
-    if (!obj) return "";
-
-    // Harvard: alguns itens antigos podem ter sido salvos com link IDS (bloqueia hotlink e dá 503).
-    // Preferimos SEMPRE baseimageurl (estático .jpg) ou primaryimageurl.
-    const harvardBest =
-      obj.baseimageurl ||               // Harvard (mais confiável)
-      obj.primaryimageurl ||            // Harvard (campo comum)
-      "";
-
-    // AIC: salvamos uma URL IIIF montada (imageUrl). Se não tiver, usa campos originais.
-    const aicBest =
-      obj.imageUrl ||                   // nossa URL iiif montada
-      obj.primaryImage ||               // fallback improvável, mas ok
-      obj.primaryImageSmall ||          // último caso
-      "";
-
-    // Met: às vezes só temos a small (porque veio do card); se tiver a grande, usamos.
-    const metBest =
-      obj.primaryImage ||               // Met grande
-      obj.primaryImageSmall ||          // Met thumb
-      "";
-
-    // Detecta museu pelo campo obj.museum (foi padronizado nos mapeamentos)
-    const museum = (obj.museum || "").toLowerCase();
-
-    if (museum.includes("harvard")) return harvardBest;
-    if (museum.includes("institute of chicago") || museum.includes("aic")) return aicBest;
-    if (museum.includes("met")) return metBest;
-
-    // se não conseguir detectar, tenta o melhor geral
+  function getBestSrc(obj) {
     return (
-      metBest ||
-      aicBest ||
-      harvardBest ||
+      obj.primaryImage ||         // Met grande
+      obj.primaryImageSmall ||    // Met pequena
+      obj.imageUrl ||             // AIC IIIF
+      obj.primaryimageurl ||      // Harvard
+      obj.baseimageurl ||         // Harvard base
       ""
     );
   }
 
-  // título e artista para exibir (normaliza campos entre as APIs)
-  function getArtist(obj) {
-    return (
-      obj.artistDisplayName || // Met
-      obj.artist_title ||      // AIC
-      (obj.people && obj.people[0]?.name) || // Harvard
-      "Unknown artist"
-    );
-  }
+  function handleModalImgError() {
+    if (!selectedItem || !modalImgRef.current) return;
 
-  function getTitle(obj) {
-    return obj.title || "Untitled";
-  }
+    const tried = modalImgRef.current.getAttribute("data-tried") || "";
+    const candidates = [
+      selectedItem.primaryImage,
+      selectedItem.primaryImageSmall,
+      selectedItem.imageUrl,
+      selectedItem.primaryimageurl,
+      selectedItem.baseimageurl,
+    ].filter(Boolean);
 
-  function getMuseum(obj) {
-    return obj.museum || "";
+    let next = null;
+    for (const url of candidates) {
+      if (!tried.split("|").includes(url)) {
+        next = url;
+        break;
+      }
+    }
+
+    if (next) {
+      const newTried = tried ? tried + "|" + next : next;
+      modalImgRef.current.setAttribute("data-tried", newTried);
+      modalImgRef.current.src = next;
+    }
   }
 
   return (
@@ -94,26 +65,55 @@ export default function Exhibition() {
         </p>
       )}
 
-      {/* grade de itens salvos */}
       <div className="exhibition-grid">
         {items.map((item) => {
-          const imgSrc = getImageSrc(item);
+          const imgSrc = getBestSrc(item);
+          const artistName =
+            item.artistDisplayName ||
+            item.artist_title ||
+            (item.people && item.people[0]?.name) ||
+            "Unknown artist";
+
           return (
             <article key={item.objectID || item.id} className="exhibition-card">
-              {/* imagem abre modal em tamanho maior */}
               <img
                 src={imgSrc}
-                alt={getTitle(item)}
+                alt={item.title || "Artwork image"}
                 className="thumb-img"
                 loading="lazy"
-                onClick={() => imgSrc && setSelectedItem(item)}
+                onClick={() => setSelectedItem(item)}
+                onError={(e) => {
+                  // se a miniatura quebrar, tenta cair para outra fonte
+                  const tried = e.currentTarget.getAttribute("data-tried") || "";
+                  const candidates = [
+                    item.primaryImage,
+                    item.primaryImageSmall,
+                    item.imageUrl,
+                    item.primaryimageurl,
+                    item.baseimageurl,
+                  ].filter(Boolean);
+
+                  let next = null;
+                  for (const url of candidates) {
+                    if (!tried.split("|").includes(url)) {
+                      next = url;
+                      break;
+                    }
+                  }
+
+                  if (next) {
+                    const newTried = tried ? tried + "|" + next : next;
+                    e.currentTarget.setAttribute("data-tried", newTried);
+                    e.currentTarget.src = next;
+                  }
+                }}
+                data-tried={imgSrc || ""}
                 style={{ cursor: imgSrc ? "zoom-in" : "default" }}
               />
 
-              {/* título + infos básicas */}
-              <h3 className="title">{getTitle(item)}</h3>
-              <p className="artist">{getArtist(item)}</p>
-              <p className="museum">{getMuseum(item)}</p>
+              <h3 className="title">{item.title || "Untitled"}</h3>
+              <p className="artist">{artistName}</p>
+              <p className="museum">{item.museum}</p>
 
               <div className="actions">
                 <button
@@ -129,7 +129,7 @@ export default function Exhibition() {
         })}
       </div>
 
-      {/* Modal da imagem grande */}
+      {/* Modal */}
       {selectedItem && (
         <div
           className="exhibition-modal"
@@ -137,28 +137,29 @@ export default function Exhibition() {
           aria-modal="true"
           onClick={() => setSelectedItem(null)}
         >
-          <div
-            className="exhibition-modal__content"
-            onClick={(e) => e.stopPropagation()} // impede fechar ao clicar no conteúdo
-          >
+          <div className="exhibition-modal__content" onClick={(e) => e.stopPropagation()}>
+            <img
+              ref={modalImgRef}
+              src={getBestSrc(selectedItem)}
+              alt={
+                `${selectedItem.title || "Untitled"} — ` +
+                (selectedItem.artistDisplayName ||
+                  selectedItem.artist_title ||
+                  (selectedItem.people && selectedItem.people[0]?.name) ||
+                  "Unknown artist")
+              }
+              className="exhibition-modal__image"
+              onError={handleModalImgError}
+              data-tried={getBestSrc(selectedItem) || ""}
+            />
             <button
+              type="button"
               className="exhibition-modal__close"
+              aria-label="Close image"
               onClick={() => setSelectedItem(null)}
-              aria-label="close"
-              title="close"
             >
               ×
             </button>
-
-            <img
-              src={getImageSrc(selectedItem)}
-              alt={`${getTitle(selectedItem)} — ${getArtist(selectedItem)}`}
-              className="exhibition-modal__image"
-            />
-
-            <figcaption className="exhibition-modal__caption">
-              <strong>{getTitle(selectedItem)}</strong> — {getArtist(selectedItem)}
-            </figcaption>
           </div>
         </div>
       )}
