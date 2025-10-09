@@ -1,1 +1,3 @@
-/met/* https://collectionapi.metmuseum.org/public/collection/v1/:splat 200
+/met/*     https://collectionapi.metmuseum.org/public/collection/v1/:splat     200
+/aic/*     https://api.artic.edu/api/v1/:splat                                 200
+/harvard/* https://api.harvardartmuseums.org/:splat                            200
