@@ -21,16 +21,66 @@ export default function Exhibition() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // mesma lógica de fallback de imagem usada nos cards da Home/Detalhe
+  /**
+   * Escolhe a melhor URL de imagem disponível no item,
+   * respeitando as diferenças entre Met / AIC / Harvard.
+   * NUNCA usa placeholder.
+   */
   function getImageSrc(obj) {
+    if (!obj) return "";
+
+    // Harvard: alguns itens antigos podem ter sido salvos com link IDS (bloqueia hotlink e dá 503).
+    // Preferimos SEMPRE baseimageurl (estático .jpg) ou primaryimageurl.
+    const harvardBest =
+      obj.baseimageurl ||               // Harvard (mais confiável)
+      obj.primaryimageurl ||            // Harvard (campo comum)
+      "";
+
+    // AIC: salvamos uma URL IIIF montada (imageUrl). Se não tiver, usa campos originais.
+    const aicBest =
+      obj.imageUrl ||                   // nossa URL iiif montada
+      obj.primaryImage ||               // fallback improvável, mas ok
+      obj.primaryImageSmall ||          // último caso
+      "";
+
+    // Met: às vezes só temos a small (porque veio do card); se tiver a grande, usamos.
+    const metBest =
+      obj.primaryImage ||               // Met grande
+      obj.primaryImageSmall ||          // Met thumb
+      "";
+
+    // Detecta museu pelo campo obj.museum (foi padronizado nos mapeamentos)
+    const museum = (obj.museum || "").toLowerCase();
+
+    if (museum.includes("harvard")) return harvardBest;
+    if (museum.includes("institute of chicago") || museum.includes("aic")) return aicBest;
+    if (museum.includes("met")) return metBest;
+
+    // se não conseguir detectar, tenta o melhor geral
     return (
-      obj.primaryImage ||         // Met (grande)
-      obj.primaryImageSmall ||    // Met (thumb)
-      obj.imageUrl ||             // AIC (iiif montada)
-      obj.primaryimageurl ||      // Harvard (campo comum)
-      obj.baseimageurl ||         // Harvard (alguns itens só têm base)
-      ""                          // nada? deixa vazio (sem placeholder)
+      metBest ||
+      aicBest ||
+      harvardBest ||
+      ""
     );
+  }
+
+  // título e artista para exibir (normaliza campos entre as APIs)
+  function getArtist(obj) {
+    return (
+      obj.artistDisplayName || // Met
+      obj.artist_title ||      // AIC
+      (obj.people && obj.people[0]?.name) || // Harvard
+      "Unknown artist"
+    );
+  }
+
+  function getTitle(obj) {
+    return obj.title || "Untitled";
+  }
+
+  function getMuseum(obj) {
+    return obj.museum || "";
   }
 
   return (
@@ -47,19 +97,13 @@ export default function Exhibition() {
       {/* grade de itens salvos */}
       <div className="exhibition-grid">
         {items.map((item) => {
-          const imgSrc = getImageSrc(item); // ✅ escolha segura
-          const artistName =
-            item.artistDisplayName ||
-            item.artist_title ||
-            (item.people && item.people[0]?.name) ||
-            "Unknown artist";
-
+          const imgSrc = getImageSrc(item);
           return (
             <article key={item.objectID || item.id} className="exhibition-card">
               {/* imagem abre modal em tamanho maior */}
               <img
                 src={imgSrc}
-                alt={item.title || "Artwork image"}
+                alt={getTitle(item)}
                 className="thumb-img"
                 loading="lazy"
                 onClick={() => imgSrc && setSelectedItem(item)}
@@ -67,11 +111,10 @@ export default function Exhibition() {
               />
 
               {/* título + infos básicas */}
-              <h3 className="title">{item.title || "Untitled"}</h3>
-              <p className="artist">{artistName}</p>
-              {item.museum && <p className="museum">{item.museum}</p>}
+              <h3 className="title">{getTitle(item)}</h3>
+              <p className="artist">{getArtist(item)}</p>
+              <p className="museum">{getMuseum(item)}</p>
 
-              {/* botão remover */}
               <div className="actions">
                 <button
                   className="remove-btn"
@@ -86,7 +129,7 @@ export default function Exhibition() {
         })}
       </div>
 
-      {/* modal da imagem grande */}
+      {/* Modal da imagem grande */}
       {selectedItem && (
         <div
           className="exhibition-modal"
@@ -96,31 +139,33 @@ export default function Exhibition() {
         >
           <div
             className="exhibition-modal__content"
-            onClick={(e) => e.stopPropagation()} // impede fechar ao clicar dentro
+            onClick={(e) => e.stopPropagation()} // impede fechar ao clicar no conteúdo
           >
             <button
               className="exhibition-modal__close"
               onClick={() => setSelectedItem(null)}
               aria-label="close"
+              title="close"
             >
               ×
             </button>
 
             <img
-              src={getImageSrc(selectedItem)} // ✅ mesmo fallback do card
-              alt={
-                selectedItem.title
-                  ? `${selectedItem.title} — ${selectedItem.artistDisplayName || selectedItem.artist_title || (selectedItem.people && selectedItem.people[0]?.name) || "Unknown artist"}`
-                  : "Artwork image"
-              }
+              src={getImageSrc(selectedItem)}
+              alt={`${getTitle(selectedItem)} — ${getArtist(selectedItem)}`}
               className="exhibition-modal__image"
             />
+
+            <figcaption className="exhibition-modal__caption">
+              <strong>{getTitle(selectedItem)}</strong> — {getArtist(selectedItem)}
+            </figcaption>
           </div>
         </div>
       )}
     </section>
   );
 }
+
 
 // // no topo do arquivo, junto dos outros imports
 // import { useState, useEffect } from "react";
