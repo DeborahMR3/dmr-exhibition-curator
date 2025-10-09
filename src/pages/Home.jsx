@@ -147,9 +147,13 @@ export default function Home() {
             <article key={object.objectID || object.id} className="art-card">
               {/* 🔗 LINK — leva à página de detalhes da obra */}
               <Link
-                to={`/artwork/${(object.museum || "")
-                  .toLowerCase()
-                  .replaceAll(" ", "")}/${object.objectID || object.id}`}
+                to={`/artwork/${
+                  object.museum.toLowerCase().includes("met")
+                    ? "met"
+                    : object.museum.toLowerCase().includes("chicago")
+                    ? "aic"
+                    : "harvard"
+                }/${object.objectID || object.id}`}
               >
                 <img
                   src={object.primaryImageSmall}
