@@ -150,43 +150,47 @@ export default function Home() {
       </div>
 
       <div className="artworks-grid">
-        {filteredItems.map((object) => {
-          const artistName =
-            object.artistDisplayName ||
-            object.artist_title ||
-            (object.people && object.people[0]?.name) ||
-            "Unknown artist";
+        {filteredItems
+          // CHANGED: removemos obras do The Met apenas na renderização (não mexe nas buscas).
+          // Efeito: nada do Met aparece nos cards, mas o resto do fluxo do app permanece igual.
+          .filter(x => !/met/i.test(x.museum || ""))
+          .map((object) => {
+            const artistName =
+              object.artistDisplayName ||
+              object.artist_title ||
+              (object.people && object.people[0]?.name) ||
+              "Unknown artist";
 
-          const imgSrc = getImageSrc(object);
+            const imgSrc = getImageSrc(object);
 
-          return (
-            <article key={object.objectID || object.id} className="art-card">
-              <Link to={`/artwork/${getMuseumSlug(object)}/${object.objectID || object.id}`}>
-                <img
-                  src={imgSrc}
-                  alt={object.title || "Artwork image"}
-                  loading="lazy"
-                />
-              </Link>
+            return (
+              <article key={object.objectID || object.id} className="art-card">
+                <Link to={`/artwork/${getMuseumSlug(object)}/${object.objectID || object.id}`}>
+                  <img
+                    src={imgSrc}
+                    alt={object.title || "Artwork image"}
+                    loading="lazy"
+                  />
+                </Link>
 
-              <h3>{object.title || "Untitled"}</h3>
-              <p>{artistName}</p>
-              <p className="museum">{object.museum}</p>
+                <h3>{object.title || "Untitled"}</h3>
+                <p>{artistName}</p>
+                <p className="museum">{object.museum}</p>
 
-              <div className="actions">
-                {isSelected(object) ? (
-                  <button className="remove-btn" onClick={() => removeItem(object)}>
-                    remove
-                  </button>
-                ) : (
-                  <button className="add-btn" onClick={() => addItem(object)}>
-                    add
-                  </button>
-                )}
-              </div>
-            </article>
-          );
-        })}
+                <div className="actions">
+                  {isSelected(object) ? (
+                    <button className="remove-btn" onClick={() => removeItem(object)}>
+                      remove
+                    </button>
+                  ) : (
+                    <button className="add-btn" onClick={() => addItem(object)}>
+                      add
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })}
       </div>
     </section>
   );
