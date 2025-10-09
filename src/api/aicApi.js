@@ -1,9 +1,8 @@
 // src/api/aicApi.js
-// API Art Institute of Chicago (AIC) — usa URL completa (sem proxy)
 
 const AIC_BASE = "https://api.artic.edu/api/v1";
 
-// Busca obras por termo
+// busca obras por termo
 export async function searchAICObjects(term) {
   const url = `${AIC_BASE}/artworks/search?q=${encodeURIComponent(
     term
@@ -25,7 +24,6 @@ export async function searchAICObjects(term) {
     }));
 }
 
-// Busca detalhes de uma obra
 export async function getAICObject(id) {
   const url = `${AIC_BASE}/artworks/${id}`;
   const response = await fetch(url);

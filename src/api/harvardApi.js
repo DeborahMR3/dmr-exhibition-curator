@@ -1,13 +1,13 @@
 // src/api/harvardApi.js
+
 const HARVARD_BASE = "https://api.harvardartmuseums.org";
 const HARVARD_KEY = import.meta.env.VITE_HARVARD_API_KEY;
 
-// Busca obras
+// busca obras por termo
 export async function searchHarvardObjects(term) {
   const url = `${HARVARD_BASE}/object?apikey=${HARVARD_KEY}&q=${encodeURIComponent(
     term
   )}&size=20`;
-
   const response = await fetch(url);
   if (!response.ok) throw new Error("Harvard search failed");
 
@@ -29,7 +29,7 @@ export async function searchHarvardObjects(term) {
     }));
 }
 
-// Busca detalhes de uma obra específica
+// busca detalhes de uma obra específica
 export async function getHarvardObject(id) {
   const url = `${HARVARD_BASE}/object/${id}?apikey=${HARVARD_KEY}`;
   const response = await fetch(url);
