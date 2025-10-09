@@ -1,15 +1,17 @@
 // src/api/harvardApi.js
-const HARVARD_BASE = "/harvard";
+const HARVARD_BASE = "https://api.harvardartmuseums.org";
+const HARVARD_KEY = import.meta.env.VITE_HARVARD_API_KEY;
 
 export async function searchHarvardObjects(term) {
-  const url = `${HARVARD_BASE}/search?q=${encodeURIComponent(term)}&size=20`;
+  const url = `${HARVARD_BASE}/object?apikey=${HARVARD_KEY}&q=${encodeURIComponent(term)}&size=20`;
   const response = await fetch(url);
+
   if (!response.ok) throw new Error("Harvard search failed");
   const data = await response.json();
 
   const records = data.records || [];
-  const artworks = records
-    .filter((record) => record.primaryimageurl || record.baseimageurl) // só com imagem
+  return records
+    .filter((record) => record.primaryimageurl || record.baseimageurl)
     .map((record) => ({
       id: record.id,
       title: record.title || "Untitled",
@@ -21,13 +23,12 @@ export async function searchHarvardObjects(term) {
         record.primaryimageurl || record.baseimageurl,
       museum: "Harvard Art Museum",
     }));
-
-  return artworks;
 }
 
 export async function getHarvardObject(id) {
-  const url = `${HARVARD_BASE}/object/${id}`;
+  const url = `${HARVARD_BASE}/object/${id}?apikey=${HARVARD_KEY}`;
   const response = await fetch(url);
+
   if (!response.ok) throw new Error("Harvard object fetch failed");
   const data = await response.json();
   const record = data.records?.[0];
