@@ -1,5 +1,5 @@
-// base aponta pro proxy do vite pra não dar cors (antes era a url completa do met)
-const BASE = "/met";
+// base aponta para a URL completa do Met (em produção o proxy do Vite não é usado)
+const BASE = "https://collectionapi.metmuseum.org/public/collection/v1";
 
 // busca ids de objetos por termo
 export function searchMetObjects(term) {

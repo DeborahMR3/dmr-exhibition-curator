@@ -51,7 +51,7 @@
   color: var(--muted);
 }
 
-/* (deixar pronto para quando adicionarmos os botões nos cards) */
+/*  pronto para quando adicionar os botões nos cards */
 .art-card .actions {
   margin-top: 8px;
   display: flex;

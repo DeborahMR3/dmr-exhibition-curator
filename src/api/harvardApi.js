@@ -1,5 +1,5 @@
-// uso o proxy /harvard e pego a key do .env (precisa começar com VITE_)
-const BASE = '/harvard';
+// uso a URL completa da API do Harvard e pego a key do .env (precisa começar com VITE_)
+const BASE = 'https://api.harvardartmuseums.org';
 const KEY = import.meta.env.VITE_HARVARD_API_KEY;
 
 // busca objetos no harvard com imagem, limitado pra não exagerar

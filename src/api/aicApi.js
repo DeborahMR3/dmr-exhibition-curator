@@ -1,9 +1,10 @@
+// base aponta para a URL completa da API do Art Institute of Chicago
 const BASE_URL = "https://api.artic.edu/api/v1/artworks";
 
 export function searchAICObjects(term) {
-  // limit= apenas 10 resultados
-  // fields=  especifica os campos que quero
-  const url = `${BASE_URL}/search?q=${term}&fields=id,title,artist_title,image_id&limit=10`;
+  // limit = apenas 10 resultados
+  // fields = especifica os campos que quero
+  const url = `${BASE_URL}/search?q=${encodeURIComponent(term)}&fields=id,title,artist_title,image_id&limit=10`;
 
   return fetch(url)
     .then(function (response) {
@@ -13,7 +14,7 @@ export function searchAICObjects(term) {
       return response.json();
     })
     .then(function (aicResponse) {
-      //resposta vem em aicResponse.data (array de objetos)
+      // resposta vem em aicResponse.data (array de objetos)
       if (!aicResponse.data) return [];
 
       // Mapeia os resultados
