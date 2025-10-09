@@ -1,0 +1,35 @@
+# netlify.toml  — proxy de APIs + fallback SPA
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# MET
+[[redirects]]
+  from = "/met/*"
+  to   = "https://collectionapi.metmuseum.org/public/collection/v1/:splat"
+  status = 200
+  force  = true
+  headers = { Access-Control-Allow-Origin = "*" }
+
+# AIC
+[[redirects]]
+  from = "/aic/*"
+  to   = "https://api.artic.edu/api/v1/:splat"
+  status = 200
+  force  = true
+  headers = { Access-Control-Allow-Origin = "*" }
+
+# Harvard (precisa da key na query; você já coloca no código)
+[[redirects]]
+  from = "/harvard/*"
+  to   = "https://api.harvardartmuseums.org/:splat"
+  status = 200
+  force  = true
+  headers = { Access-Control-Allow-Origin = "*" }
+
+# SPA fallback — DEVE ficar por último
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
