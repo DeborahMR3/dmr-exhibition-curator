@@ -1,12 +1,11 @@
-import { useEffect, useState, useRef } from "react";
+// src/pages/Exhibition.jsx
+import { useEffect, useState } from "react";
 import "../styling/Exhibition.css";
 import { useExhibition } from "../context/ExhibitionContext.jsx";
 
 export default function Exhibition() {
   const { items, count, removeItem } = useExhibition();
-
   const [selectedItem, setSelectedItem] = useState(null);
-  const modalImgRef = useRef(null);
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -16,42 +15,15 @@ export default function Exhibition() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  function getBestSrc(obj) {
+  function getImageSrc(obj) {
     return (
       obj.primaryImage ||         // Met grande
-      obj.primaryImageSmall ||    // Met pequena
-      obj.imageUrl ||             // AIC IIIF
-      obj.primaryimageurl ||      // Harvard
-      obj.baseimageurl ||         // Harvard base
+      obj.primaryImageSmall ||    // Met thumb
+      obj.imageUrl ||             // AIC normalizado
+      obj.primaryimageurl ||      // Harvard bruto (se sobrar)
+      obj.baseimageurl ||         // Harvard IIIF estável
       ""
     );
-  }
-
-  function handleModalImgError() {
-    if (!selectedItem || !modalImgRef.current) return;
-
-    const tried = modalImgRef.current.getAttribute("data-tried") || "";
-    const candidates = [
-      selectedItem.primaryImage,
-      selectedItem.primaryImageSmall,
-      selectedItem.imageUrl,
-      selectedItem.primaryimageurl,
-      selectedItem.baseimageurl,
-    ].filter(Boolean);
-
-    let next = null;
-    for (const url of candidates) {
-      if (!tried.split("|").includes(url)) {
-        next = url;
-        break;
-      }
-    }
-
-    if (next) {
-      const newTried = tried ? tried + "|" + next : next;
-      modalImgRef.current.setAttribute("data-tried", newTried);
-      modalImgRef.current.src = next;
-    }
   }
 
   return (
@@ -67,7 +39,7 @@ export default function Exhibition() {
 
       <div className="exhibition-grid">
         {items.map((item) => {
-          const imgSrc = getBestSrc(item);
+          const imgSrc = getImageSrc(item);
           const artistName =
             item.artistDisplayName ||
             item.artist_title ||
@@ -81,46 +53,15 @@ export default function Exhibition() {
                 alt={item.title || "Artwork image"}
                 className="thumb-img"
                 loading="lazy"
-                onClick={() => setSelectedItem(item)}
-                onError={(e) => {
-                  // se a miniatura quebrar, tenta cair para outra fonte
-                  const tried = e.currentTarget.getAttribute("data-tried") || "";
-                  const candidates = [
-                    item.primaryImage,
-                    item.primaryImageSmall,
-                    item.imageUrl,
-                    item.primaryimageurl,
-                    item.baseimageurl,
-                  ].filter(Boolean);
-
-                  let next = null;
-                  for (const url of candidates) {
-                    if (!tried.split("|").includes(url)) {
-                      next = url;
-                      break;
-                    }
-                  }
-
-                  if (next) {
-                    const newTried = tried ? tried + "|" + next : next;
-                    e.currentTarget.setAttribute("data-tried", newTried);
-                    e.currentTarget.src = next;
-                  }
-                }}
-                data-tried={imgSrc || ""}
+                onClick={() => imgSrc && setSelectedItem(item)}
                 style={{ cursor: imgSrc ? "zoom-in" : "default" }}
               />
-
               <h3 className="title">{item.title || "Untitled"}</h3>
               <p className="artist">{artistName}</p>
               <p className="museum">{item.museum}</p>
 
               <div className="actions">
-                <button
-                  className="remove-btn"
-                  onClick={() => removeItem(item)}
-                  aria-label="remove from my exhibition"
-                >
+                <button className="remove-btn" onClick={() => removeItem(item)}>
                   remove
                 </button>
               </div>
@@ -129,44 +70,28 @@ export default function Exhibition() {
         })}
       </div>
 
-      {/* Modal */}
+      {/* Modal de imagem grande */}
       {selectedItem && (
-        <div
-          className="exhibition-modal"
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setSelectedItem(null)}
-        >
+        <div className="exhibition-modal" onClick={() => setSelectedItem(null)}>
           <div className="exhibition-modal__content" onClick={(e) => e.stopPropagation()}>
-            <img
-              ref={modalImgRef}
-              src={getBestSrc(selectedItem)}
-              alt={
-                `${selectedItem.title || "Untitled"} — ` +
-                (selectedItem.artistDisplayName ||
-                  selectedItem.artist_title ||
-                  (selectedItem.people && selectedItem.people[0]?.name) ||
-                  "Unknown artist")
-              }
-              className="exhibition-modal__image"
-              onError={handleModalImgError}
-              data-tried={getBestSrc(selectedItem) || ""}
-            />
-            <button
-              type="button"
-              className="exhibition-modal__close"
-              aria-label="Close image"
-              onClick={() => setSelectedItem(null)}
-            >
+            <button className="close-btn" onClick={() => setSelectedItem(null)} aria-label="close">
               ×
             </button>
+            <img
+              src={getImageSrc(selectedItem)}
+              alt={selectedItem.title || "Artwork image"}
+              className="exhibition-modal__image"
+            />
+            <figcaption className="exhibition-modal__caption">
+              {(selectedItem.title || "Untitled") +
+                (selectedItem.artistDisplayName ? ` — ${selectedItem.artistDisplayName}` : "")}
+            </figcaption>
           </div>
         </div>
       )}
     </section>
   );
 }
-
 
 // // no topo do arquivo, junto dos outros imports
 // import { useState, useEffect } from "react";

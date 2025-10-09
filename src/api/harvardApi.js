@@ -2,48 +2,70 @@
 const HARVARD_BASE = "https://api.harvardartmuseums.org";
 const HARVARD_KEY = import.meta.env.VITE_HARVARD_API_KEY;
 
+/**
+ * Busca na Harvard por objetos COM IMAGEM, usando o recurso /object.
+ * NADA de /search aqui (dá 404).
+ */
 export async function searchHarvardObjects(term) {
-  const url = `${HARVARD_BASE}/search?q=${encodeURIComponent(term)}&size=20&apikey=${HARVARD_KEY}`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Harvard search failed");
-  const data = await response.json();
+  const url =
+    `${HARVARD_BASE}/object?apikey=${HARVARD_KEY}` +
+    `&q=${encodeURIComponent(term)}` +
+    `&hasimage=1&size=20`; // só itens com imagem, 20 resultados
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Harvard search failed");
+  const data = await res.json();
   const records = data.records || [];
-  return records
-    .filter((r) => r.primaryimageurl || r.baseimageurl) // só com imagem
-    .map((record) => ({
-      id: record.id,
-      title: record.title || "Untitled",
+
+  // Normaliza para o formato que a app já entende
+  const artworks = records
+    .filter((r) => r.baseimageurl || r.primaryimageurl) // garanta imagem estável
+    .map((r) => ({
+      id: r.id,
+      title: r.title || "Untitled",
+      // DICA: na Harvard, r.people pode ter vários autores; usamos o primeiro quando existir
       artistDisplayName:
-        record.people && record.people.length > 0 ? record.people[0].name : "Unknown artist",
-      primaryImageSmall: record.primaryimageurl || record.baseimageurl, // serve pro card
-      primaryimageurl: record.primaryimageurl || "",
-      baseimageurl: record.baseimageurl || "",
+        (Array.isArray(r.people) && r.people.length > 0 && r.people[0].name) ||
+        "Unknown artist",
+      // preferimos baseimageurl/primaryimageurl (IIIF estável)
+      primaryImageSmall: r.baseimageurl || r.primaryimageurl,
+      primaryImage: r.primaryimageurl || r.baseimageurl,
+      department: r.department || "",
+      date: r.dated || "",
       museum: "Harvard Art Museum",
-      people: record.people || [],
+      // guardo o objeto bruto mínimo que pode ser útil depois
+      _raw: { baseimageurl: r.baseimageurl, primaryimageurl: r.primaryimageurl },
     }));
+
+  return artworks;
 }
 
+/**
+ * Busca detalhes de UM objeto específico.
+ */
 export async function getHarvardObject(id) {
   const url = `${HARVARD_BASE}/object/${id}?apikey=${HARVARD_KEY}`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Harvard object fetch failed");
-  const data = await response.json();
-  const record = data.records?.[0] || data;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Harvard object fetch failed");
+  const data = await res.json();
 
   return {
-    id: record.id,
-    title: record.title || "Untitled",
+    id: data.id,
+    title: data.title || "Untitled",
     artistDisplayName:
-      record.people && record.people.length > 0 ? record.people[0].name : "Unknown artist",
-    primaryImage: record.primaryimageurl || record.baseimageurl,
-    primaryimageurl: record.primaryimageurl || "",
-    baseimageurl: record.baseimageurl || "",
-    date: record.dated || "",
-    department: record.department || "",
+      (Array.isArray(data.people) &&
+        data.people.length > 0 &&
+        data.people[0].name) ||
+      "Unknown artist",
+    date: data.dated || "",
+    department: data.department || "",
+    // para a página de detalhe e o modal usarem a grande
+    primaryImage: data.primaryimageurl || data.baseimageurl || "",
+    primaryImageSmall: data.baseimageurl || data.primaryimageurl || "",
     museum: "Harvard Art Museum",
-    people: record.people || [],
   };
 }
+
 
 // // src/api/harvardApi.js
 // // API do Harvard Art Museums (HAM)
