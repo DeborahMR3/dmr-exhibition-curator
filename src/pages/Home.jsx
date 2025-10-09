@@ -155,9 +155,16 @@ export default function Home() {
                     : "harvard"
                 }/${object.objectID || object.id}`}
               >
+                {/* imagem segura para todos os museus */}
                 <img
-                  src={object.primaryImageSmall}
-                  alt={object.title}
+                  src={
+                    object.primaryImageSmall || // The Met
+                    object.imageUrl ||          // AIC
+                    object.primaryimageurl ||   // Harvard
+                    object.primaryImage ||      // fallback genérico
+                    "/placeholder.jpg"          // caso nenhuma imagem exista
+                  }
+                  alt={object.title || "Artwork image"}
                   loading="lazy"
                 />
               </Link>
