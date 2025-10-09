@@ -40,3 +40,35 @@
   object-fit: cover;
   border-radius: 6px;
 }
+
+/* =========================
+   novas classes (sem inline)
+   ========================= */
+
+/* contador da minha exposição (apenas espaçamento/legibilidade) */
+.counter {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+/* (deixar pronto para quando adicionarmos os botões nos cards) */
+.art-card .actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.add-btn,
+.remove-btn {
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #f8f8f8;
+}
+
+.add-btn:focus,
+.remove-btn:focus {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
