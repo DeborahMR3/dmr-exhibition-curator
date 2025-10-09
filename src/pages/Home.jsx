@@ -10,7 +10,7 @@ import { useExhibition } from "../context/ExhibitionContext.jsx";
 
 // limites simples para manter estável
 const PAGE_SIZE = 100; // número máximo de obras mostradas
-const MET_COUNT = 1;   // quantos detalhes do Met buscar por vez
+const MET_COUNT = 1; // quantos detalhes do Met buscar por vez
 
 export default function Home() {
   // estados do componente
@@ -49,25 +49,33 @@ export default function Home() {
       for (let i = 0; i < metIDs.length; i++) {
         try {
           const detail = await getObject(metIDs[i]);
-          if (detail && detail.primaryImageSmall) {
+          // só entra se tiver imagem
+          if (detail && (detail.primaryImageSmall || detail.primaryImage)) {
             metResults.push({ ...detail, museum: "The Met" });
           }
-        } catch (error) {
+        } catch {
           // ignora erro e continua
         }
       }
 
-      // combina todos os resultados das APIs
-      const allResults = [...metResults, ...aicObjects, ...harvardObjects];
+      // combina e mantém apenas itens com alguma imagem válida
+      const allResults = [...metResults, ...aicObjects, ...harvardObjects].filter((o) => {
+        return (
+          o.primaryImageSmall ||
+          o.primaryImage ||
+          o.imageUrl || // AIC às vezes mapeia como imageUrl em alguns exemplos antigos
+          o.primaryimageurl ||
+          o.baseimageurl
+        );
+      });
 
       // ✅ extrai nomes corretos de artistas de cada API
       const allArtists = allResults
         .map((item) => {
-          if (item.artistDisplayName) return item.artistDisplayName; // Met
-          if (item.artist_title) return item.artist_title; // AIC
-          if (item.people && item.people.length > 0)
-            return item.people[0].name; // Harvard
-          return "Unknown artist"; // fallback
+          if (item.artistDisplayName) return item.artistDisplayName; // Met / Harvard (normalizado)
+          if (item.artist_title) return item.artist_title; // AIC (se você ainda usar esse campo no mapeamento antigo)
+          if (item.people && item.people.length > 0) return item.people[0].name; // fallback Harvard bruto
+          return "Unknown artist";
         })
         .filter(Boolean);
 
@@ -129,7 +137,7 @@ export default function Home() {
       {/* formulário de busca */}
       <form
         className="search-form"
-        onSubmit={function (event) {
+        onSubmit={(event) => {
           event.preventDefault(); // impede reload
           if (searchTerm.trim() === "") {
             fetchArtworks(initialSearchTerm);
@@ -174,24 +182,33 @@ export default function Home() {
             (object.people && object.people[0]?.name) ||
             "Unknown artist";
 
+          // escolhe imagem certa de acordo com o museu
+          const imgSrc =
+            object.primaryImageSmall || // Met e Harvard (normalizado)
+            object.primaryImage || // Met/Harvard (detalhe grande se small não veio)
+            object.imageUrl || // AIC (caso seu mapeamento antigo use esse nome)
+            object.primaryimageurl || // Harvard bruto
+            object.baseimageurl || // Harvard bruto
+            ""; // sem placeholder, se não tiver imagem, não mostra <img>
+
+          // rota por museu
+          const museumSlug = object.museum.toLowerCase().includes("met")
+            ? "met"
+            : object.museum.toLowerCase().includes("chicago")
+            ? "aic"
+            : "harvard";
+
           return (
             <article key={object.objectID || object.id} className="art-card">
               {/* 🔗 Link para detalhes */}
-              <Link
-                to={`/artwork/${
-                  object.museum.toLowerCase().includes("met")
-                    ? "met"
-                    : object.museum.toLowerCase().includes("chicago")
-                    ? "aic"
-                    : "harvard"
-                }/${object.objectID || object.id}`}
-              >
-              <img
-                src={object.primaryImageSmall}
-                alt={object.title || "Artwork image"}
-                loading="lazy"
-              />
-
+              <Link to={`/artwork/${museumSlug}/${object.objectID || object.id}`}>
+                {imgSrc && (
+                  <img
+                    src={imgSrc}
+                    alt={object.title || "Artwork image"}
+                    loading="lazy"
+                  />
+                )}
               </Link>
 
               <h3>{object.title || "Untitled"}</h3>
