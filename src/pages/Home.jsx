@@ -187,14 +187,7 @@ export default function Home() {
                 }/${object.objectID || object.id}`}
               >
               <img
-                src={
-                  object.primaryImageSmall ||   // Met
-                  object.image_url ||           // AIC (campo correto)
-                  object.primaryimageurl ||     // Harvard (campo comum)
-                  object.baseimageurl ||        // Harvard (alguns retornos)
-                  object.primaryImage ||        // fallback genérico
-                  "/placeholder.jpg"            // se nenhuma imagem existir
-                }
+                src={object.primaryImageSmall}
                 alt={object.title || "Artwork image"}
                 loading="lazy"
               />
