@@ -10,7 +10,7 @@ import { useExhibition } from "../context/ExhibitionContext.jsx";
 
 // limites simples para manter estável
 const PAGE_SIZE = 100; // número máximo de obras mostradas
-const MET_COUNT = 0; // quantos detalhes do Met buscar por vez
+const MET_COUNT = 2; // quantos detalhes do Met buscar por vez
 
 export default function Home() {
   // estados do componente
