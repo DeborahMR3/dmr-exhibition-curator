@@ -123,13 +123,73 @@
   font-size: 15px;
 }
 
-
-
-/* .exhibition{ text-align:center; }
-.exhibition h2{
-  font-size: 22px;
-  margin: 18px 0 8px;
+/* ========== Modal: layout consistente e legível ========== */
+.exhibition-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;            /* respiro nas bordas menores */
+  z-index: 999;
 }
-.exhibition p{
-  color: var(--muted);
-} */
+
+/* conteúdo empilha imagem + painel de infos, ambos centralizados */
+.exhibition-modal__content {
+  max-width: min(1000px, 90vw);
+  max-height: 90vh;         /* nunca passa da viewport */
+  overflow: auto;           /* rola se precisar */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+/* imagem padronizada: cabe sempre, mantém proporção */
+.exhibition-modal__image {
+  display: block;
+  max-width: 100%;
+  max-height: 65vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.6);
+  margin: 0 auto;
+}
+
+/* botão fechar visível */
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+  font-size: 22px;
+  line-height: 36px;
+  cursor: pointer;
+}
+
+/* painel de texto: mesma largura da imagem, alto contraste */
+.exhibition-modal__caption,
+.exhibition-modal__meta {
+  width: 100%;
+  max-width: min(1000px, 90vw);   /* acompanha a imagem */
+  background: rgba(20,20,20,.9);
+  color: #f5f5f5;
+  padding: 10px 12px;
+  border-radius: 8px;
+  line-height: 1.5;
+  font-size: 15px;
+}
+
+.exhibition-modal__meta strong { color: #fff; }
+.exhibition-modal__meta a {
+  color: #c7d2fe;
+  text-decoration: underline;
+}
