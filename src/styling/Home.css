@@ -1,20 +1,8 @@
-/* .home{ text-align:center; }
-.home h2{
-  font-size: 22px;
-  margin: 18px 0 10px;
-}
-.home p{
-  color: var(--muted);
-  max-width: 720px;
-  margin: 0 auto;
-} */
 .home-page {
   padding: 20px;
 }
 
-.loading {
-  color: #555;
-}
+.loading { color: #555; }
 
 .error {
   color: crimson;
@@ -28,10 +16,36 @@
   gap: 16px;
 }
 
+/* card como <a>, com cara de card (1 só bloco) */
 .art-card {
+  display: block;                 /* bloco inteiro clicável */
+  color: inherit;                 /* sem azul/roxo de link */
+  text-decoration: none;          /* sem sublinhado */
+  cursor: pointer;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 10px;
+  transition: box-shadow .15s ease;
+}
+
+/* remover aparência de link em todos os estados */
+.art-card:link,
+.art-card:visited,
+.art-card:hover,
+.art-card:active,
+.art-card:focus {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* hover/foco simples */
+.art-card:hover {
+  box-shadow: 0 16px 16px rgba(13, 13, 13, 0.08);
+  background-color: rgba(228, 236, 243, 0.24);
+}
+.art-card:focus-visible {
+  outline: 2px solid #6c5ce7;
+  outline-offset: 2px;
 }
 
 .art-card img {
@@ -41,17 +55,13 @@
   border-radius: 6px;
 }
 
-/* =========================
-   novas classes (sem inline)
-   ========================= */
-
-/* contador da minha exposição (apenas espaçamento/legibilidade) */
+/* contador da exposição */
 .counter {
   margin-top: 6px;
   color: var(--muted);
 }
 
-/*  pronto para quando adicionar os botões nos cards */
+/* ações do card */
 .art-card .actions {
   margin-top: 8px;
   display: flex;
@@ -67,6 +77,13 @@
   background: #f8f8f8;
 }
 
+.remove-btn:hover {
+background-color: rgba(213, 117, 117, 0.677);
+}
+
+.add-btn:hover {
+background-color: rgba(156, 225, 171, 0.854);
+}
 .add-btn:focus,
 .remove-btn:focus {
   outline: 2px solid #000;

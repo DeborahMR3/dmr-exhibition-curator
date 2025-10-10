@@ -34,7 +34,7 @@ export default function Home() {
         searchHarvardObjects(termToSearch), // >>> usa /object com hasimage=1
       ]);
 
-      // Detalhes do Met (para trazer imagem confiável do Met)
+      // detalhes do Met (para trazer imagem confiável do Met)
       const metIDs = (metData?.objectIDs || []).slice(0, MET_COUNT);
       const metResults = [];
       for (const id of metIDs) {
@@ -43,19 +43,21 @@ export default function Home() {
           if (detail && (detail.primaryImageSmall || detail.primaryImage)) {
             metResults.push({ ...detail, museum: "The Met" });
           }
-        } catch {}
+        } catch {
+          // ignora erro individual do met
+        }
       }
 
       const allResults = [...metResults, ...aicObjects, ...harvardObjects];
 
-      // Artistas únicos (Met / AIC / Harvard)
+      // artistas únicos (Met / AIC / Harvard)
       const uniqueArtists = Array.from(
         new Set(
           allResults
             .map((it) => {
               if (it.artistDisplayName) return it.artistDisplayName; // Met
-              if (it.artist_title) return it.artist_title; // AIC (se vier)
-              if (it.people && it.people[0]?.name) return it.people[0].name; // Harvard bruto
+              if (it.artist_title) return it.artist_title;           // AIC
+              if (it.people && it.people[0]?.name) return it.people[0].name; // Harvard
               return null;
             })
             .filter(Boolean)
@@ -73,16 +75,16 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
+  useEffect(function () {
     fetchArtworks(initialSearchTerm);
   }, []);
 
-  useEffect(() => {
+  useEffect(function () {
     if (searchTerm.trim() !== "") fetchArtworks(searchTerm);
   }, [searchTerm]);
 
   const filteredItems = selectedArtist
-    ? items.filter((item) => {
+    ? items.filter(function (item) {
         const artist =
           item.artistDisplayName ||
           item.artist_title ||
@@ -92,14 +94,14 @@ export default function Home() {
       })
     : items;
 
-  // Função utilitária para sempre escolher uma URL de imagem estável
+  // função utilitária para sempre escolher uma URL de imagem estável
   function getImageSrc(obj) {
     return (
-      obj.primaryImageSmall || // Met pequeno
-      obj.imageUrl ||          // AIC (normalizado na sua aicApi)
-      obj.primaryimageurl ||   // Harvard bruto (se em algum lugar ainda vier)
-      obj.baseimageurl ||      // Harvard estável (IIIF)
-      obj.primaryImage ||      // Met grande
+      obj.primaryImageSmall || // met pequeno
+      obj.imageUrl ||          // aic (normalizado na sua aicApi)
+      obj.primaryimageurl ||   // harvard bruto (se vier)
+      obj.baseimageurl ||      // harvard estável (iiif)
+      obj.primaryImage ||      // met grande
       ""
     );
   }
@@ -121,7 +123,7 @@ export default function Home() {
 
       <form
         className="search-form"
-        onSubmit={(e) => {
+        onSubmit={function (e) {
           e.preventDefault();
           fetchArtworks(searchTerm.trim() || initialSearchTerm);
         }}
@@ -130,7 +132,7 @@ export default function Home() {
           type="text"
           placeholder="search artworks..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={function (e) { setSearchTerm(e.target.value); }}
         />
         <button type="submit">search</button>
       </form>
@@ -140,21 +142,22 @@ export default function Home() {
         <select
           id="artistSelect"
           value={selectedArtist}
-          onChange={(e) => setSelectedArtist(e.target.value)}
+          onChange={function (e) { setSelectedArtist(e.target.value); }}
         >
           <option value="">All</option>
-          {artists.map((artist) => (
-            <option key={artist} value={artist}>{artist}</option>
-          ))}
+          {artists.map(function (artist) {
+            return (
+              <option key={artist} value={artist}>{artist}</option>
+            );
+          })}
         </select>
       </div>
 
       <div className="artworks-grid">
         {filteredItems
-          // CHANGED: removemos obras do The Met apenas na renderização (não mexe nas buscas). !!!!!!!!!!!!!
-          // Efeito: nada do Met aparece nos cards, mas o resto do fluxo do app permanece igual.
-          .filter(x => !/met/i.test(x.museum || ""))
-          .map((object) => {
+          // removemos obras do the met apenas na renderização (não mexe nas buscas)
+          .filter(function (x) { return !/met/i.test(x.museum || ""); })
+          .map(function (object) {
             const artistName =
               object.artistDisplayName ||
               object.artist_title ||
@@ -162,16 +165,23 @@ export default function Home() {
               "Unknown artist";
 
             const imgSrc = getImageSrc(object);
+            const href = `/artwork/${getMuseumSlug(object)}/${object.objectID || object.id}`; // destino quando clico
 
             return (
-              <article key={object.objectID || object.id} className="art-card">
-                <Link to={`/artwork/${getMuseumSlug(object)}/${object.objectID || object.id}`}>
+              <Link
+                key={object.objectID || object.id}
+                className="art-card"
+                to={href}
+              >
+                {imgSrc && (
                   <img
                     src={imgSrc}
                     alt={object.title || "Artwork image"}
                     loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onError={function (e) { e.currentTarget.remove(); }} // some a imagem se quebrar
                   />
-                </Link>
+                )}
 
                 <h3>{object.title || "Untitled"}</h3>
                 <p>{artistName}</p>
@@ -179,22 +189,37 @@ export default function Home() {
 
                 <div className="actions">
                   {isSelected(object) ? (
-                    <button className="remove-btn" onClick={() => removeItem(object)}>
+                    <button
+                      className="remove-btn"
+                      onClick={function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeItem(object);
+                      }}
+                    >
                       remove
                     </button>
                   ) : (
-                    <button className="add-btn" onClick={() => addItem(object)}>
+                    <button
+                      className="add-btn"
+                      onClick={function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addItem(object);
+                      }}
+                    >
                       add
                     </button>
                   )}
                 </div>
-              </article>
+              </Link>
             );
           })}
       </div>
     </section>
   );
 }
+
 
 // import { useState, useEffect } from "react";
 // import { Link } from "react-router-dom"; // ⟵ link de navegação entre páginas
