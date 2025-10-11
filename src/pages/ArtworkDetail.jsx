@@ -1,9 +1,11 @@
+// src/pages/ArtworkDetail.jsx
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { getObject as getMetObject } from "../api/metApi.js";
 import { getAICObject } from "../api/aicApi.js";
 import { getHarvardObject } from "../api/harvardApi.js";
 import "../styling/ArtworkDetail.css";
+import { useExhibition } from "../context/ExhibitionContext.jsx";
 
 export default function ArtworkDetail() {
   const { museum, id } = useParams();
@@ -13,8 +15,11 @@ export default function ArtworkDetail() {
   const [error, setError] = useState("");
   const [showFull, setShowFull] = useState(false);
 
-  // guardo uma referência pra conseguir trocar a src no onError
+  // refs separados para a imagem principal e a do modal
   const imgRef = useRef(null);
+  const modalImgRef = useRef(null);
+
+  const { addItem, removeItem, isSelected } = useExhibition();
 
   useEffect(() => {
     async function fetchArtwork() {
@@ -24,21 +29,16 @@ export default function ArtworkDetail() {
         setArtwork(null);
 
         let data = null;
-
         const muse = (museum || "").toLowerCase();
-        if (muse.includes("met")) {
-          data = await getMetObject(id);
-        } else if (muse.includes("aic")) {
-          data = await getAICObject(id);
-        } else if (muse.includes("harvard")) {
-          data = await getHarvardObject(id);
-        }
+
+        if (muse.includes("met")) data = await getMetObject(id);
+        else if (muse.includes("aic")) data = await getAICObject(id);
+        else if (muse.includes("harvard")) data = await getHarvardObject(id);
 
         if (!data) {
           setError("Artwork not found.");
           return;
         }
-
         setArtwork(data);
       } catch (err) {
         console.error(err);
@@ -47,117 +47,165 @@ export default function ArtworkDetail() {
         setLoading(false);
       }
     }
-
     fetchArtwork();
   }, [museum, id]);
 
-  // tenta trocar para a melhor alternativa quando a primeira imagem falha
-  function handleImgError() {
-    if (!artwork || !imgRef.current) return;
-
-    const tried = imgRef.current.getAttribute("data-tried") || "";
-
-    // ordem de tentativas (sem placeholder!)
-    const candidates = [
-      artwork.primaryImage,        // Met large
-      artwork.primaryImageSmall,   // Met small
-      artwork.imageUrl,            // AIC (IIIF montado)
-      artwork.primaryimageurl,     // Harvard comum
-      artwork.baseimageurl,        // Harvard base
-    ].filter(Boolean);
-
-    // encontra a próxima que ainda não tentamos
-    let next = null;
-    for (const url of candidates) {
-      if (!tried.split("|").includes(url)) {
-        next = url;
-        break;
-      }
-    }
-
-    if (next) {
-      const newTried = tried ? tried + "|" + next : next;
-      imgRef.current.setAttribute("data-tried", newTried);
-      imgRef.current.src = next;
-    }
+  // escolhe primeira imagem (sem placeholder)
+  function pickFirstSrc(a) {
+    return (
+      a?.primaryImage ||
+      a?.primaryImageSmall ||
+      a?.imageUrl ||
+      a?.primaryimageurl ||
+      a?.baseimageurl ||
+      ""
+    );
   }
 
+  // fallback de imagem por <img>
+  function tryNextImage(imgEl, a) {
+    if (!a || !imgEl) return;
+    const tried = imgEl.getAttribute("data-tried") || "";
+    const triedList = tried ? tried.split("|") : [];
+    const candidates = [
+      a.primaryImage,
+      a.primaryImageSmall,
+      a.imageUrl,
+      a.primaryimageurl,
+      a.baseimageurl,
+    ].filter(Boolean);
+    const next = candidates.find((url) => !triedList.includes(url));
+    if (next) {
+      const newTried = tried ? `${tried}|${next}` : next;
+      imgEl.setAttribute("data-tried", newTried);
+      imgEl.src = next;
+    }
+  }
+  function handleMainImgError()  { tryNextImage(imgRef.current, artwork); }
+  function handleModalImgError() { tryNextImage(modalImgRef.current, artwork); }
+
   if (loading) return <p className="loading">Loading...</p>;
-  if (error) return <p className="error">{error}</p>;
+  if (error)   return <p className="error">{error}</p>;
   if (!artwork) return null;
 
-  // primeira opção que vamos tentar carregar
-  const firstSrc =
-    artwork.primaryImage ||            // Met grande
-    artwork.primaryImageSmall ||       // Met pequena
-    artwork.imageUrl ||                // AIC
-    artwork.primaryimageurl ||         // Harvard
-    artwork.baseimageurl ||            // Harvard
-    "";
+  const firstSrc = pickFirstSrc(artwork);
+  const artistName =
+    artwork.artistDisplayName ||
+    artwork.artist_title ||
+    (artwork.people && artwork.people[0]?.name) ||
+    "Unknown";
+
+  // Where to see it (AIC/Harvard)
+  function getWhereToSee(a) {
+    const museumName = (a.museum || "").toLowerCase();
+    const theId = a.id ?? a.objectID;
+
+    if (museumName.includes("chicago")) {
+      return {
+        url: theId ? `https://www.artic.edu/artworks/${theId}` : null,
+        label: "view on The Art Institute of Chicago",
+        address: "111 S Michigan Ave, Chicago, IL 60603, United States",
+      };
+    }
+    if (museumName.includes("harvard")) {
+      const url =
+        a.url || (theId ? `https://harvardartmuseums.org/collections/object/${theId}` : null);
+      return {
+        url,
+        label: "view on Harvard Art Museums",
+        address: "32 Quincy St, Cambridge, MA 02138, United States",
+      };
+    }
+    return { url: null, label: "", address: "" };
+  }
+  const where = getWhereToSee(artwork);
 
   return (
     <section className="artwork-detail">
       <h2>{artwork.title || "Untitled"}</h2>
 
       <div className="artwork-detail__content">
-        <img
-          ref={imgRef}
-          src={firstSrc}
-          alt={artwork.title || "Artwork image"}
-          className="artwork-detail__image"
-          onClick={() => firstSrc && setShowFull(true)}
-          onError={handleImgError}
-          data-tried={firstSrc || ""}
-        />
+        {firstSrc && (
+          <img
+            ref={imgRef}
+            src={firstSrc}
+            alt={artwork.title || "Artwork image"}
+            className="artwork-detail__image"
+            onClick={() => setShowFull(true)}
+            onError={handleMainImgError}
+            data-tried={firstSrc || ""}
+          />
+        )}
 
         <div className="artwork-detail__info">
-          <p>
-            <strong>Artist:</strong>{" "}
-            {artwork.artistDisplayName ||
-              artwork.artist_title ||
-              (artwork.people && artwork.people[0]?.name) ||
-              "Unknown"}
-          </p>
-          <p>
-            <strong>Date:</strong>{" "}
-            {artwork.objectDate || artwork.date || "N/A"}
-          </p>
-          <p>
-            <strong>Medium:</strong> {artwork.medium || "N/A"}
-          </p>
-          <p>
-            <strong>Department:</strong>{" "}
-            {artwork.department || artwork.department_title || "—"}
-          </p>
+          <p><strong>Artist:</strong> {artistName}</p>
+          <p><strong>Date:</strong> {artwork.objectDate || artwork.date || "N/A"}</p>
+          <p><strong>Medium:</strong> {artwork.medium || "N/A"}</p>
+          <p><strong>Department:</strong> {artwork.department || artwork.department_title || "—"}</p>
 
-          {artwork.objectURL && (
-            <a
-              href={artwork.objectURL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="artwork-detail__link"
-            >
-              View on Museum Website →
-            </a>
+          {where.url && (
+            <div style={{ marginTop: 12 }}>
+              <p>
+                <strong>Where to see it:</strong>{" "}
+                <a href={where.url} target="_blank" rel="noopener noreferrer">
+                  {where.label}
+                </a>
+              </p>
+              {where.address && <p><strong>Address:</strong> {where.address}</p>}
+            </div>
           )}
+
+          {!where.url && artwork.objectURL && (
+            <div style={{ marginTop: 12 }}>
+              <a
+                href={artwork.objectURL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="artwork-detail__link"
+              >
+                View on Museum Website →
+              </a>
+            </div>
+          )}
+
+          {/* >>> AÇÕES: agora embaixo de tudo <<< */}
+          <div style={{ marginTop: 16 }}>
+            {isSelected(artwork) ? (
+              <button
+                type="button"
+                className="remove-btn"
+                onClick={() => removeItem(artwork)}
+              >
+                remove from my exhibition
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="add-btn"
+                onClick={() => addItem(artwork)}
+              >
+                add to my exhibition
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Modal de imagem grande */}
-      {showFull && (
+      {showFull && firstSrc && (
         <div
           className="artwork-modal"
           role="dialog"
           aria-modal="true"
           onClick={() => setShowFull(false)}
         >
-          <div className="artwork-modal__content">
+          <div className="artwork-modal__content" onClick={(e) => e.stopPropagation()}>
             <img
+              ref={modalImgRef}
               src={firstSrc}
               alt={artwork.title || "Artwork image"}
               className="artwork-modal__image"
-              onError={handleImgError}
-              ref={imgRef}
+              onError={handleModalImgError}
+              data-tried={firstSrc || ""}
             />
             <button
               type="button"

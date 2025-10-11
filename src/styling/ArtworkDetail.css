@@ -1,54 +1,69 @@
+/* ===== Página ===== */
 .artwork-detail {
-  max-width: 1100px;          /* ligeiramente maior pra acomodar imagem maior */
-  margin: 40px auto;
-  padding: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 16px;
   text-align: center;
 }
 
-/* bloco que contém imagem + informações */
 .artwork-detail__content {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 32px;                  /* respiro entre imagem e texto */
   align-items: flex-start;
+  gap: 16px;
   margin-top: 24px;
 }
 
-/* imagem principal da obra — agora maior */
+/* imagem principal — cabe na viewport */
 .artwork-detail__image {
-  max-width: 700px;           /* antes 400px → agora imagem grande */
-  width: 100%;
+  max-width: 700px;
+  max-height: 50vh;     /* ajuste fino p/ caber com header+footer */
+  width: auto;
   height: auto;
   border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  cursor: zoom-in;            /* coerente com comportamento de ampliar */
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  cursor: zoom-in;
 }
 
-/* bloco de informações ao lado (ou abaixo no mobile) */
+/* infos ao lado/abaixo — rolagem interna se precisar */
 .artwork-detail__info {
   max-width: 400px;
+  max-height: 34vh;     /* resto da janela; evita scroll da página */
+  overflow: auto;
   text-align: left;
 }
 
-/* link para o site do museu */
+/* links (inclui "Where to see it") */
+.artwork-detail__info a,
 .artwork-detail__link {
-  display: inline-block;
-  margin-top: 10px;
-  color: #0056b3;
+  color: #0a58ca;
   text-decoration: none;
   font-weight: 500;
 }
+.artwork-detail__info a:hover,
+.artwork-detail__link:hover { text-decoration: underline; }
 
-.artwork-detail__link:hover {
-  text-decoration: underline;
+/* botões add/remove (mesmo padrão do app) */
+.add-btn,
+.remove-btn {
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #f8f8f8;
+}
+.add-btn:focus,
+.remove-btn:focus {
+  outline: 2px solid #000;
+  outline-offset: 2px;
 }
 
-/* modal de visualização grande (abre ao clicar na imagem) */
+/* ===== Modal ===== */
 .artwork-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0,0,0,.85);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -56,20 +71,41 @@
 }
 
 .artwork-modal__content {
-  max-width: 90%;
-  max-height: 90%;
+  max-width: min(1000px, 90vw);
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  padding: 8px;
 }
 
 .artwork-modal__image {
-  width: 100%;
+  display: block;
+  max-width: 100%;
+  max-height: 80vh;
+  width: auto;
   height: auto;
   border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 6px 20px rgba(0,0,0,.6);
   cursor: zoom-out;
 }
 
-.artwork-modal__caption {
-  margin-top: 12px;
-  color: #f5f5f5;
-  font-size: 15px;
+.artwork-modal__close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+  font-size: 22px;
+  line-height: 36px;
+  cursor: pointer;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 880px) {
+  .artwork-detail__image { max-height: 48vh; }
+  .artwork-detail__info  { max-height: 38vh; }
 }
