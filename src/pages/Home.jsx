@@ -20,6 +20,12 @@ export default function Home() {
   const [artists, setArtists] = useState([]);
   const [selectedArtist, setSelectedArtist] = useState("");
 
+  // ---- ordenação por título ----
+  const [sortOrder, setSortOrder] = useState("az"); // "az" | "za"
+  function getTitle(obj) {
+    return (obj.title || "Untitled").toString();
+  }
+
   const { count, addItem, removeItem, isSelected } = useExhibition();
 
   async function fetchArtworks(termToSearch) {
@@ -113,6 +119,17 @@ export default function Home() {
     return "harvard";
   }
 
+  // ===== aplica filtros finais e a ordenação =====
+  const itemsForGrid = [...filteredItems]
+    .filter(function (x) { return !/met/i.test(x.museum || ""); })     // esconder MET
+    .filter(function (obj) { return Boolean(getImageSrc(obj)); })      // só cards com foto
+    .sort(function (a, b) {
+      const A = getTitle(a);
+      const B = getTitle(b);
+      const cmp = A.localeCompare(B, undefined, { sensitivity: "base" });
+      return sortOrder === "az" ? cmp : -cmp;
+    });
+
   return (
     <section className="home-page">
       <h2>Artworks from AIC and Harvard</h2>
@@ -151,70 +168,81 @@ export default function Home() {
             );
           })}
         </select>
+
+        {/* sort por título A–Z / Z–A */}
+        <div className="sort-filter" style={{ display: "inline-block", marginLeft: 12 }}>
+          <label htmlFor="sortSelect" style={{ marginRight: 8 }}>Sort by</label>
+          <select
+            id="sortSelect"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+          >
+            <option value="az">Title A–Z</option>
+            <option value="za">Title Z–A</option>
+          </select>
+        </div>
       </div>
 
       <div className="artworks-grid">
-        {filteredItems
-          // removemos obras do the met apenas na renderização (não mexe nas buscas)
-          .filter(function (x) { return !/met/i.test(x.museum || ""); })
-          .map(function (object) {
-            const artistName =
-              object.artistDisplayName ||
-              object.artist_title ||
-              (object.people && object.people[0]?.name) ||
-              "Unknown artist";
+        {itemsForGrid.map(function (object) {
+          const artistName =
+            object.artistDisplayName ||
+            object.artist_title ||
+            (object.people && object.people[0]?.name) ||
+            "Unknown artist";
 
-            const imgSrc = getImageSrc(object);
-            const href = `/artwork/${getMuseumSlug(object)}/${object.objectID || object.id}`; // destino quando clico
+          const imgSrc = getImageSrc(object);
+          const href = `/artwork/${getMuseumSlug(object)}/${object.objectID || object.id}`; // destino quando clico
 
-            return (
-              <Link
-                key={object.objectID || object.id}
-                className="art-card"
-                to={href}
-              >
-                {imgSrc && (
-                  <img
-                    src={imgSrc}
-                    alt={object.title || "Artwork image"}
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    onError={function (e) { e.currentTarget.remove(); }} // some a imagem se quebrar
-                  />
+          return (
+            <Link
+              key={object.objectID || object.id}
+              className="art-card"
+              to={href}
+            >
+              {/* só renderiza <img> se tiver URL */}
+              {imgSrc && (
+                <img
+                  src={imgSrc}
+                  alt={object.title || "Artwork image"}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={function (e) { e.currentTarget.remove(); }} // some a imagem se quebrar
+                />
+              )}
+
+              <h3>{object.title || "Untitled"}</h3>
+              <p>{artistName}</p>
+              <p className="museum">{object.museum}</p>
+
+              <div className="actions">
+                {isSelected(object) ? (
+                  <button
+                    className="remove-btn"
+                    onClick={function (e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeItem(object);
+                    }}
+                  >
+                    remove
+                  </button>
+                ) : (
+                  <button
+                    className="add-btn"
+                    onClick={function (e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      addItem(object);
+                    }}
+                  >
+                    add
+                  </button>
                 )}
-
-                <h3>{object.title || "Untitled"}</h3>
-                <p>{artistName}</p>
-                <p className="museum">{object.museum}</p>
-
-                <div className="actions">
-                  {isSelected(object) ? (
-                    <button
-                      className="remove-btn"
-                      onClick={function (e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        removeItem(object);
-                      }}
-                    >
-                      remove
-                    </button>
-                  ) : (
-                    <button
-                      className="add-btn"
-                      onClick={function (e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        addItem(object);
-                      }}
-                    >
-                      add
-                    </button>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
