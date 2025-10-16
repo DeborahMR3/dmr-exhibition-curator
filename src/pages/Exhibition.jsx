@@ -131,7 +131,7 @@ export default function Exhibition() {
 
       {/* dica pra deixar claro que os cards são clicáveis */}
       {count > 0 && (
-        <p className="hint">💡 tip: click on any artwork card to see more details</p>
+        <p className="hint">💡 tip: click on any artwork to see more details</p>
       )}
 
       {/* botão pra abrir o display */}
