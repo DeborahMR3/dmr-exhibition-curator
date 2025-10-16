@@ -1,8 +1,10 @@
 # Exhibition Curator
 
 Small web app to browse artworks from the Art Institute of Chicago (AIC) and Harvard Art Museums, and build a quick exhibition that lives for the browser session.
+**No login required** — you can explore, create, and display your exhibition instantly.
 
-Live: https://dmrexhibitioncuratorproject.netlify.app/
+
+Livehttps://dmrexhibitioncuratorproject.netlify.app/:
 
 ---
 
