@@ -1,4 +1,100 @@
-/* Reset leve e layout base */
+/* reset leve e layout base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden; /* evita rolagem lateral em telas pequenas */
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* o <main> cresce para empurrar o footer */
+main {
+  flex: 1;
+}
+
+/* base de tipografia/cores */
+:root {
+  --text: #1f2937;   /* cinza-escuro limpo */
+  --muted: #6b7280;  /* cinza suave */
+  --brand: #3a2c6a;  /* roxinho principal */
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  font-size: 16px;
+  color: var(--text);
+  background: #ffffff;
+  line-height: 1.55;
+}
+
+/* garante que imagens nunca ultrapassem o container */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* títulos e parágrafos com margens consistentes */
+h1, h2, h3, p {
+  margin-bottom: 0.75rem;
+}
+
+/* melhora a legibilidade e espaçamento em telas pequenas */
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  h1, h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+
+  button {
+    font-size: 0.95rem;
+    padding: 6px 12px;
+  }
+
+  section {
+    padding: 12px;
+  }
+}
+
+/* telas muito pequenas (mobile < 480px) */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1, h2 {
+    font-size: 1rem;
+  }
+
+  section {
+    padding: 10px;
+  }
+
+  input, select {
+    width: 100%;
+    font-size: 0.95rem;
+  }
+}
+/*
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root { height: 100%; }
@@ -9,14 +105,13 @@ html, body, #root { height: 100%; }
   min-height: 100vh;
 }
 
-/* O <main> cresce para empurrar o footer */
 main { flex: 1; }
 
-/* Base de tipografia/cores */
+
 :root{
-  --text:#1f2937;         /* cinza-escuro limpo */
-  --muted:#6b7280;        /* cinza suave */
-  --brand:#3a2c6a;        /* seu roxinho */
+  --text:#1f2937;
+  --muted:#6b7280;
+  --brand:#3a2c6a;
 }
 
 body{
@@ -25,4 +120,4 @@ body{
   color: var(--text);
   background: #ffffff;
   line-height: 1.55;
-}
+} */
